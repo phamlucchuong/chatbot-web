@@ -31,7 +31,7 @@ public class UserService {
     }
 
     protected User getUserById(String id) {
-        return userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FIND));
+        return userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
     }
 
 }

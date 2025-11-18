@@ -27,13 +27,14 @@ CREATE TABLE messages (
     id CHAR(36) PRIMARY KEY,
     conversation_id CHAR(36) NOT NULL,
     content TEXT NOT NULL,
+    bot BOOLEAN NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
 );
 
 CREATE TABLE diseases (
-    id CHAR(36) PRIMARY KEY,
+    id VARCHAR(10) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     description TEXT,
     symptoms TEXT,

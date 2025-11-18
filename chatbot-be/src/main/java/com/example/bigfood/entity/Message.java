@@ -37,6 +37,8 @@ public class Message {
     @Column(name = "created_at", updatable = false)
     LocalDateTime createdAt;
 
+    boolean bot;
+
     // Mối quan hệ Many-to-One với Conversation (Bên sở hữu Foreign Key)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "conversation_id", nullable = false) // Tên cột Foreign Key

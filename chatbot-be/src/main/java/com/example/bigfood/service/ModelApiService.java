@@ -13,7 +13,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.example.bigfood.dto.request.PredictDiseaseRequest;
 import com.example.bigfood.dto.request.SearchRequest;
-import com.example.bigfood.dto.response.DiseaseResponse;
+import com.example.bigfood.dto.response.PredictResponse;
 import com.example.bigfood.dto.response.SymptomResponse;
 
 import lombok.AccessLevel;
@@ -63,7 +63,7 @@ public class ModelApiService {
 
 
 
-    public DiseaseResponse predictDisease(List<String> symptoms) {
+    public PredictResponse predictDisease(List<String> symptoms) {
         try {
             PredictDiseaseRequest request = PredictDiseaseRequest.builder()
                     .symptoms(symptoms)
@@ -74,12 +74,11 @@ public class ModelApiService {
 
             HttpEntity<PredictDiseaseRequest> entity = new HttpEntity<>(request, headers);
 
-            ResponseEntity<DiseaseResponse> response = restTemplate.exchange(
+            ResponseEntity<PredictResponse> response = restTemplate.exchange(
                     predictApiUrl,
                     HttpMethod.POST,
                     entity,
-                    DiseaseResponse.class);
-
+                    PredictResponse.class);
             return response.getBody();
         } catch (Exception e) {
             log.error("Error calling predict API: {}", e.getMessage());

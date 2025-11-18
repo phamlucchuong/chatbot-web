@@ -48,7 +48,7 @@ public class AuthenticationService {
     public AuthenticationResponse authenticated(AuthenticationRequest request) {
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
         var user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FIND));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         boolean authencated = passwordEncoder.matches(request.getPassword(), user.getPassword());
         if (!authencated) {
@@ -79,7 +79,7 @@ public class AuthenticationService {
         var signToken = verifySignedJWT(token);
         var jwtID = signToken.getJWTClaimsSet().getJWTID();
         var expriryDate = signToken.getJWTClaimsSet().getExpirationTime();
-        InvalidatedToken invalidatedToken = new InvalidatedToken().builder()
+        InvalidatedToken invalidatedToken = InvalidatedToken.builder()
                 .id(jwtID)
                 .expiryTime(expriryDate)
                 .build();

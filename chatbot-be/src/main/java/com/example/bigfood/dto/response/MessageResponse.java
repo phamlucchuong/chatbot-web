@@ -19,5 +19,6 @@ import lombok.experimental.FieldDefaults;
 public class MessageResponse {
     String id;
     String content;
+    boolean bot;
     LocalDateTime createdAt;
 }

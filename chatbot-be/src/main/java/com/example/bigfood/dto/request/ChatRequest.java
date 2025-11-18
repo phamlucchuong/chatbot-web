@@ -1,4 +1,4 @@
-package com.example.bigfood.dto.response;
+package com.example.bigfood.dto.request;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -14,8 +14,7 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class DiseaseResponse {
-    String disease_id;
-    String disease;
-    float confidence;
+public class ChatRequest {
+    String content;
+    String conversationId;
 }

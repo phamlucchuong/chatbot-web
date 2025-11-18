@@ -21,5 +21,4 @@ public class ConversationResponse {
     String id;
     String name;
     LocalDateTime createdAt;
-    List<MessageResponse> messages;
 }

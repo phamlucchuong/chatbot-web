@@ -14,8 +14,7 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class DiseaseResponse {
-    String disease_id;
-    String disease;
-    float confidence;
+public class ChatResponse {
+    MessageResponse userMessage;
+    MessageResponse botMessage;
 }
