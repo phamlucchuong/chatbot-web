@@ -50,6 +50,7 @@ public class ConversationService {
     ModelApiService modelApiService;
 
     static final Map<String, Set<String>> SYMPTOM_CONTEXT = new ConcurrentHashMap<>();
+    static final Map<String, Integer> REQUEST_LIMIT = new ConcurrentHashMap<>(); // Giới hạn số triệu chứng trong ngữ cảnh
 
     /**
      * Xử lý các câu hỏi đơn giản, dựa trên luật (keywords).
@@ -73,7 +74,7 @@ public class ConversationService {
                 lowerCaseMsg.contains("tạm biệt") ||
                 lowerCaseMsg.equals("bye")) {
 
-            return "Cảm ơn bạn đã sử dụng dịch vụ. Chúc bạn mau khỏe!";
+            return "Cảm ơn bạn đã sử dụng dịch vụ. Chúc bạn mau khỏe! Nếu có thắc mắc cần được giải đáp, hãy quay lại nhé!";
         }
 
         // 3. Luật về "Giúp đỡ"
@@ -156,21 +157,15 @@ public class ConversationService {
 
         // 2. Xử lý AI và tạo response
         String botResponseContent;
-        SymptomResponse symptomResponse = modelApiService.extractSymptom(request);
-        log.info("Extracted symptoms: {}", symptomResponse.getSymptoms());
 
         String content = handleSimpleChat(request.getContent());
         if (content != null) {
             botResponseContent = content;
-        }
+        } else {
+            // nhận dạng triệu chứng từ user
+            SymptomResponse symptomResponse = modelApiService.extractSymptom(request);
+            log.info("Extracted symptoms: {}", symptomResponse.getSymptoms());
 
-        // if (symptomResponse.getSymptoms().isEmpty()) {
-        //     // Trả về câu trả lời đơn giản nếu không có triệu chứng
-        //     String simpleResponse = handleSimpleChat(request.getContent());
-        //     botResponseContent = simpleResponse != null ? simpleResponse 
-        //         : "Xin lỗi, tôi không hiểu câu hỏi của bạn. Bạn có thể mô tả các triệu chứng của mình không?";
-        // } 
-        else {
             // xử lý nhớ ngữ cảnh triệu chứng
             List<String> symptoms = symptomResponse.getSymptoms();
             Set<String> contextSymptoms;
@@ -184,24 +179,19 @@ public class ConversationService {
             } else {
                 contextSymptoms = new HashSet<>(symptoms);
                 SYMPTOM_CONTEXT.put(conversation_id, contextSymptoms);
+                REQUEST_LIMIT.put(conversation_id, 0);
             }
 
 
-
+            // chẩn đoán bệnh từ các triệu chứng trong ngữ cảnh
             PredictResponse predictResponse = modelApiService.predictDisease(new ArrayList<>(contextSymptoms));
 
-            if(predictResponse.getConfidence() < 0.5) {
-                botResponseContent = "À, tôi hiểu rồi. Rất có thể bạn đang mắc bệnh: " + predictResponse.getDisease_name()
-                    + "\n\nNhưng để chắc chắn hơn, tôi cần thêm thông tin về các triệu chứng của bạn để chẩn đoán chính xác hơn. "
+            if(predictResponse.getConfidence() < 0.85 && REQUEST_LIMIT.get(conversation_id) < 2) {
+                botResponseContent = "À, tôi hiểu rồi. Từ các triệu chứng mà bạn đã cung cấp, rất có thể bạn đang mắc bệnh: " + predictResponse.getDisease_name()
+                    + "\n\nNhưng để chắc chắn hơn, tôi cần thêm thông tin về các triệu chứng mà bạn gặp phải để có thể đưa ra chẩn đoán chính xác hơn. "
                     + "\n\nBạn có thể mô tả chi tiết hơn về tình trạng sức khỏe hiện tại của mình không?";
-                return ChatResponse.builder()
-                    .userMessage(userMessageResponse)
-                    .botMessage(MessageResponse.builder()
-                        .content(botResponseContent)
-                        .bot(true)
-                        .createdAt(LocalDateTime.now())
-                        .build())
-                    .build();
+
+                REQUEST_LIMIT.put(conversation_id, REQUEST_LIMIT.get(conversation_id) + 1);
             } else {
                 Disease disease = diseaseRepository.findById(predictResponse.getDisease_id())
                         .orElseThrow(() -> new AppException(ErrorCode.DISEASE_NOT_FOUND));
