@@ -309,7 +309,7 @@ function App() {
 
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-[var(--bg)] text-[var(--text)]">
       <SideBar handleNewChat={handleNewChat} chatHistory={chatHistory} currentChatId={currentChatId} handleSelectChat={handleSelectChat} handleDeleteChat={handleDeleteChat}></SideBar>
 
       <div className="flex-1 flex flex-col">

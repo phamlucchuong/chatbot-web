@@ -69,29 +69,25 @@ const PricingModal = ({ isOpen, onClose }) => {
                     {pricingOptions.map((option) => (
                         <div
                             key={option.name}
-                            className={`relative flex flex-col items-center h-[450px] p-6 rounded-xl border-2 
-                                bg-gray bg-opacity-30
-                                ${option.highlight
-                                ? 'border-blue-600 shadow-xl scale-105'
-                                : 'border-gray-200'
-                                } transition-transform duration-300 ease-in-out`}
+                            className={`relative flex flex-col items-center h-[450px] p-6 rounded-xl border-2 bg-card transition-transform duration-300 ease-in-out
+                                ${option.highlight ? 'border-[var(--primary)] shadow-xl scale-105' : 'border-theme'}`}
                         >
                             {option.highlight && (
-                                <span className="bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full absolute -mt-10">
+                                <span className="bg-[var(--primary)] text-[var(--primary-contrast)] text-xs font-semibold px-3 py-1 rounded-full absolute -mt-10">
                                     PHỔ BIẾN
                                 </span>
                             )}
-                            <h3 className="text-2xl text-white font-bold mb-2 text-center">
+                            <h3 className="text-2xl text-[var(--text)] font-bold mb-2 text-center">
                                 {option.name}
                             </h3>
-                            <p className="text-4xl text-white font-extrabold text-center mb-6">
+                            <p className="text-4xl text-[var(--text)] font-extrabold text-center mb-6">
                                 {option.price}
                             </p>
 
                             {/* Danh sách Tính năng */}
-                            <div className="space-y-3 mb-8 text-left">
+                            <div className="space-y-3 mb-8 text-left text-[var(--text)]">
                                 {option.features.map((feature, index) => (
-                                    <div key={index} className="flex items-center text-white">
+                                    <div key={index} className="flex items-center">
                                         {index <= 2
                                             ? <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
                                             : <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -104,7 +100,7 @@ const PricingModal = ({ isOpen, onClose }) => {
                                                 />
                                             </svg>
                                         }
-                                        {feature}
+                                        <span>{feature}</span>
                                     </div>
                                 ))}
                             </div>
@@ -112,8 +108,8 @@ const PricingModal = ({ isOpen, onClose }) => {
                             {/* Nút Chọn */}
                             <button
                                 onClick={() => handleClick(option.name)}
-                                className={`absolute bottom-8 w-[250px] py-3 rounded-lg text-white font-semibold transition-colors duration-200 
-                                    ${option.buttonColor}
+                                className={`absolute bottom-8 w-[250px] py-3 rounded-lg text-[var(--primary-contrast)] font-semibold transition-colors duration-200 
+                                    ${option.name === 'Free' ? 'bg-[var(--primary)]' : 'bg-[var(--accent)]'}
                                     ${option.name !== 'Free' ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}
                                     `}
                             >

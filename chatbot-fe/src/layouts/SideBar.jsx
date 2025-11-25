@@ -47,14 +47,14 @@ export default function SideBar({ handleNewChat, chatHistory, currentChatId, han
     })()
 
     return (
-        <aside className={`${collapsed ? 'w-20' : 'w-72'} bg-[#282A2C] border-r border-gray-600 flex flex-col transition-all`}> 
+        <aside className={`${collapsed ? 'w-20' : 'w-72'} bg-card border-r border-theme flex flex-col transition-all`}> 
             {/* Header Sidebar */}
             <div className="p-2">
                 {collapsed ? (
                     <div className="flex flex-col-reverse items-center gap-2">
                         <button
                             onClick={handleNewChat}
-                            className="w-10 h-10 flex items-center justify-center rounded hover:bg-gray-700 text-white"
+                            className="w-10 h-10 flex items-center justify-center rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-[var(--text)]"
                             title="Tạo cuộc trò chuyện mới"
                             aria-label="Tạo cuộc trò chuyện mới"
                         >
@@ -67,7 +67,7 @@ export default function SideBar({ handleNewChat, chatHistory, currentChatId, han
                             title="Mở sidebar"
                             aria-label="Mở sidebar"
                         >
-                            <i className={`fa-solid fa-chevron-right`}></i>
+                             <i className={`fa-solid fa-chevron-right`}></i>
                         </button>
                     </div>
                 ) : (
@@ -75,7 +75,7 @@ export default function SideBar({ handleNewChat, chatHistory, currentChatId, han
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={handleNewChat}
-                                className={`flex items-center gap-2 px-8 py-3 bg-[#282A2C] text-white rounded-lg hover:bg-[#262628] transition-colors text-sm font-medium`}
+                                className={`flex items-center gap-2 px-8 py-3 bg-[#e3e4e6] dark:bg-[#3e3e3f] text-white rounded-lg hover:bg-[#5e5e5f] transition-colors text-sm font-medium`}
                                 title="Tạo cuộc trò chuyện mới"
                             >
                                 <i className="fa-solid fa-plus"></i>
@@ -84,7 +84,7 @@ export default function SideBar({ handleNewChat, chatHistory, currentChatId, han
                         </div>
 
                         <div>
-                            <button onClick={() => setCollapsed(!collapsed)} title={collapsed ? 'Mở sidebar' : 'Thu nhỏ sidebar'} className="text-gray-300 p-2 rounded hover:bg-gray-700">
+                            <button onClick={() => setCollapsed(!collapsed)} title={collapsed ? 'Mở sidebar' : 'Thu nhỏ sidebar'} className="text-[var(--muted)] p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700">
                                 <i className={`fa-solid ${collapsed ? 'fa-chevron-right' : 'fa-chevron-left'}`}></i>
                             </button>
                         </div>
@@ -124,15 +124,15 @@ export default function SideBar({ handleNewChat, chatHistory, currentChatId, han
                     </div>
                 </div>
             ) : (
-                <div className="p-4 border-t border-gray-700">
+                <div className="p-4 border-t border-theme">
                     {!loggedIn ? (
                         <div className="flex flex-col gap-2">
-                            <button onClick={openLogin} className="w-full px-4 py-2 rounded bg-[#282A2C] text-white text-sm">Đăng nhập</button>
-                            <button onClick={openRegister} className="w-full px-4 py-2 rounded border border-gray-600 text-white text-sm">Đăng ký</button>
+                            <button onClick={openLogin} className="w-full px-4 py-2 rounded btn-primary text-sm">Đăng nhập</button>
+                            <button onClick={openRegister} className="w-full px-4 py-2 rounded border border-theme text-[var(--text)] text-sm">Đăng ký</button>
                         </div>
                     ) : (
                         <div className="flex flex-col gap-2">
-                            <div className="text-sm text-gray-300">Xin chào, <span className="font-medium text-white">{userName || 'Bạn'}</span></div>
+                            <div className="text-sm muted">Xin chào, <span className="font-medium text-[var(--text)]">{userName || 'Bạn'}</span></div>
                             <button onClick={doLogout} className="w-full px-4 py-2 rounded bg-red-500 text-white text-sm">Đăng xuất</button>
                         </div>
                     )}

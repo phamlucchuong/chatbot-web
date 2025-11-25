@@ -34,9 +34,9 @@ export default function InputBox({ content, handleChange, handleSearch }) {
   }
 
 
-  return (
+    return (
     <div className='py-4 px-4'>
-      <div className="w-full max-w-3xl mx-auto border border-gray-600 rounded-2xl px-[20px] py-[15px] shadow dark:bg-gray-800">
+      <div className="w-full max-w-3xl mx-auto border border-theme rounded-2xl px-[20px] py-[15px] shadow bg-card">
 
         <textarea
           value={content}
@@ -61,7 +61,7 @@ export default function InputBox({ content, handleChange, handleSearch }) {
               <i className=" fa-solid fa-plus w-10"></i>
 
               {isOpenMenu &&
-                <ul className='w-64 bg-[#262628] shadow-lg rounded-lg p-4 absolute bottom-16 left-4 z-10'>
+              <ul className='w-64 bg-card shadow-lg rounded-lg p-4 absolute bottom-16 left-4 z-10'>
                     <li onClick={handleClick} className='hover:bg-gray-800'>
                       <i className="fa-regular fa-image"></i>
                       Hình ảnh
@@ -87,7 +87,7 @@ export default function InputBox({ content, handleChange, handleSearch }) {
                           if (isRecording) stopRecognition()
                           else startRecognition()
                         }}
-                        className={`w-10 rounded-full transition-colors ${isRecording ? 'bg-red-500 text-white' : ' dark:bg-gray-700'}`}
+                        className={`w-10 rounded-full transition-colors ${isRecording ? 'bg-red-500 text-white' : 'bg-[var(--surface)] text-[var(--text)]'}`}
                         title='Chép chính tả'
                       >
                         <i className={`fa-solid fa-microphone ${isRecording ? 'animate-pulse' : ''}`}></i>
