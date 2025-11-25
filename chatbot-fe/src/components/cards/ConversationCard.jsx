@@ -1,13 +1,21 @@
 import { formatDate } from "../../utils/dateUtil";
 
 
-export default function ConversationCard({ chat, currentChatId, handleSelectChat, handleDeleteChat }) {
+export default function ConversationCard({ chat, currentChatId, handleSelectChat, handleDeleteChat, compact = false }) {
     console.log(
         "chat id:", chat.id, 
         "\nchat name:", chat.name,
         "\nchat createdAt:", chat.createdAt
     );
     
+    if (compact) {
+        return (
+            <div onClick={() => handleSelectChat(chat.id)} title={chat.name} className={`group relative p-2 mb-2 rounded-lg cursor-pointer transition-colors flex items-center justify-center ${currentChatId === chat.id ? 'bg-[#3A3B3C]' : 'hover:bg-[#2E2F30]'}`}>
+                <i className="fa-regular fa-message text-gray-300 text-lg"></i>
+            </div>
+        )
+    }
+
     return (
         <div
             key={chat.id}

@@ -1,3 +1,107 @@
+:root{
+	/* Base colors (Light theme) */
+	--bg: #f8fafc;
+	--surface: #ffffff;
+	--card: #ffffff;
+	--text: #111827;
+	--muted: #6b7280;
+	--border: #e5e7eb;
+
+	/* Brand / accents */
+	--primary: #0ea5a9; /* teal-500 */
+	--primary-contrast: #ffffff;
+	--accent: #6366f1; /* indigo-500 */
+
+	/* Feedback */
+	--success: #16a34a;
+	--danger: #dc2626;
+	--info: #2563eb;
+}
+
+.dark{
+	/* Dark theme overrides */
+	--bg: #0b1220;
+	--surface: #0f1724;
+	--card: #0b1220;
+	--text: #e5e7eb;
+	--muted: #9ca3af;
+	--border: #263238;
+
+	--primary: #2dd4bf; /* teal-300 */
+	--primary-contrast: #0f1724;
+	--accent: #818cf8; /* indigo-300 */
+
+	--success: #16a34a;
+	--danger: #ef4444;
+	--info: #60a5fa;
+}
+
+html, body, #root {
+	height: 100%;
+}
+
+body{
+	background-color: var(--bg);
+	color: var(--text);
+	transition: background-color .2s ease, color .2s ease;
+}
+
+/* Utility to use CSS variables when needed */
+.bg-surface{ background-color: var(--surface); }
+.text-primary{ color: var(--text); }
+.muted{ color: var(--muted); }
+.border-theme{ border-color: var(--border); }
+
+/* Background / layout helpers */
+.bg-card { background-color: var(--card); }
+.bg-accent { background-color: var(--accent); }
+.text-accent { color: var(--accent); }
+
+/* Buttons (fallbacks for components using .btn-primary/.btn-secondary classes) */
+.btn-primary { background-color: var(--primary); color: var(--primary-contrast); border: none; }
+.btn-primary:hover { filter: brightness(0.95); }
+.btn-secondary { background-color: transparent; color: var(--text); border: 1px solid var(--border); }
+
+/* Cards and surface */
+.card { background-color: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 8px; }
+
+/* Message bubbles and play button (theme-aware) */
+.message-bubble-user { background-color: var(--primary); color: var(--primary-contrast); }
+.dark .message-bubble-user { background-color: var(--primary); color: var(--primary-contrast); }
+.message-bubble-bot { background-color: var(--card); color: var(--text); border: 1px solid var(--border); }
+
+.message-play-btn { padding: 6px; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; background: transparent; transition: background .15s ease; color: inherit; border: none; }
+.message-play-btn:hover { background: rgba(0,0,0,0.06); }
+.dark .message-play-btn:hover { background: rgba(255,255,255,0.06); }
+
+
+/* S2S panel styles */
+.s2s-panel { pointer-events: none; }
+.s2s-card { background: rgba(255,255,255,0.95); backdrop-filter: blur(6px); }
+.dark .s2s-card { background: rgba(15,23,36,0.85); }
+.s2s-listening .s2s-icon { box-shadow: 0 0 0 4px rgba(239,68,68,0.12); }
+
+@keyframes s2s-pulse {
+	0% { transform: scale(1); opacity: 1 }
+	70% { transform: scale(1.25); opacity: 0.6 }
+	100% { transform: scale(1); opacity: 1 }
+}
+.s2s-listening .s2s-icon svg.animate-pulse { animation: s2s-pulse 1.2s infinite; }
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Hide scrollbar but keep scroll behavior (cross-browser) */
+.hide-scrollbar {
+	-ms-overflow-style: none; /* IE and Edge */
+	scrollbar-width: none; /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar { display: none; } /* Chrome, Safari */
+
+/* Simple toast notifications (DOM-based) */
+.toast-container { position: fixed; right: 16px; top: 16px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+.toast { min-width: 200px; max-width: 360px; padding: 10px 14px; border-radius: 8px; color: #fff; box-shadow: 0 6px 18px rgba(0,0,0,0.12); font-size: 14px; }
+.toast.success { background: var(--success); }
+.toast.error { background: var(--danger); }
+.toast.info { background: var(--info); }

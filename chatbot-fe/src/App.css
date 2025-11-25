@@ -45,18 +45,15 @@ body {
 .textbox--bottom-left {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    width: 200px;
 }
 
 #plus-icon, .textbox--bottom-right {
-    width: 40px;
     height: 40px;
     font-size: 20px;
     border-radius: 50%;
 }
 
-#plus-icon:hover, .textbox--bottom-right:hover {
+#plus-icon:hover{
     background-color: #636363;
 }
 

@@ -1,7 +1,7 @@
-
 import React, { useRef } from 'react';
 import { useModalLogic } from '../../hooks/useModalLogic';
 import { useLogin } from '../../hooks/useAuth';
+import { showToast } from '../../utils/notify';
 
 const NO_OP = () => { };
 
@@ -41,7 +41,7 @@ const LoginModal = ({ isOpen, onClose = NO_OP, onSwitchToRegister = NO_OP }) => 
             console.log("Đăng nhập thành công:", response);
             localStorage.setItem("token", response.results.token);
             localStorage.setItem("auth", true);
-            alert("Đăng nhập thành công!");
+            showToast('Đăng nhập thành công!', 'success');
             handleClose();
         }
     };

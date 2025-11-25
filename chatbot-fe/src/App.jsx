@@ -7,6 +7,8 @@ import RegisterModal from './components/modals/RegisterModal'
 import { useLogout } from './hooks/useAuth'
 import { useChat } from './hooks/useChat'
 import Header from './layouts/Header'
+import { useSpeechContext } from './contexts/SpeechContext'
+import { showToast } from './utils/notify'
 import SideBar from './layouts/SideBar'
 
 function App() {
@@ -111,8 +113,9 @@ function App() {
     localStorage.removeItem("auth");
     setIsLoggedIn(false);
     setIsDropdownOpen(false);
-    alert("Đã đăng xuất thành công!");
-    window.location.reload();
+    showToast('Đã đăng xuất thành công!', 'success');
+    // give user a brief moment to see the toast before reloading
+    setTimeout(() => window.location.reload(), 700);
   }
 
   const handleCloseLoginModal = () => {
@@ -211,25 +214,27 @@ function App() {
       }
     } catch (error) {
       console.error("Error deleting conversation:", error);
-      alert("Không thể xóa cuộc trò chuyện. Vui lòng thử lại!");
+        showToast('Không thể xóa cuộc trò chuyện. Vui lòng thử lại!', 'error');
     }
   }
 
   const handleValidate = () => {
     if (!isLoggedIn) {
-      alert("Vui lòng đăng nhập để sử dụng chức năng này.");
+      showToast('Vui lòng đăng nhập để sử dụng chức năng này.', 'error');
       setIsLoginModalOpen(true);
       return false;
     }
     return true;
   }
 
-  const handleSearch = async () => {
+  const { speak } = useSpeechContext()
+
+  const handleSearch = async (overrideMessage) => {
     if (!handleValidate()) {
       return;
     }
 
-    const messageContent = content;
+    const messageContent = overrideMessage ?? content;
     // Kiểm tra content không rỗng
     if (!messageContent || messageContent.trim() === "") {
       return;
@@ -286,6 +291,8 @@ function App() {
 
       setMessages(prev => [...prev, userMessage, botMessage]);
 
+      // TTS is not auto-played. User can click the speaker on a message to play it.
+
       // Cập nhật chat history với messages mới
       setChatHistory(prev => prev.map(chat =>
         chat.id === chatId
@@ -309,7 +316,7 @@ function App() {
         <Header dropdownRef={dropdownRef} isDropdownOpen={isDropdownOpen} handleUserIconClick={handleUserIconClick} isLoggedIn={isLoggedIn} handleLoginClick={handleLoginClick} handleLogout={handleLogout}></Header>
 
         <div className='flex-1 flex flex-col overflow-hidden'>
-          <div className='flex-1 overflow-y-auto py-10 px-4'>
+          <div className='flex-1 overflow-y-auto hide-scrollbar py-10 px-4'>
             {messages.length === 0 ? (
               <div className='flex justify-center items-center h-full'>
                 <span className="ombre-color text-2xl">Can i help you, sir!</span>
@@ -325,7 +332,12 @@ function App() {
             )}
           </div>
 
-          <InputBox content={content} handleChange={handleChange} isTyping={isTyping} handleSearch={handleSearch}></InputBox>
+          <InputBox
+            content={content}
+            handleChange={handleChange}
+            isTyping={isTyping}
+            handleSearch={handleSearch}
+          />
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useRegister } from '../../hooks/useAuth';
+import { showToast } from '../../utils/notify';
 
 
 export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }) {
@@ -29,13 +30,13 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }) {
         e.preventDefault();
         const response = await registerUser(formData);
         if (response.ok === true) {
-            alert('Đăng ký thành công!');
+            showToast('Đăng ký thành công!', 'success');
             onClose(); // Đóng modal sau khi đăng ký thành công
             onSwitchToLogin(); // Chuyển sang modal đăng nhập
         } else {
             // Lỗi đã được hook useRegister xử lý và hiển thị qua state `error`
-            // Có thể thêm alert ở đây nếu muốn
-            alert(`Đăng ký thất bại: ${response.message}`);
+            // Hiển thị toast lỗi
+            showToast(`Đăng ký thất bại: ${response.message || 'Lỗi'}`, 'error')
         }
     };
 
