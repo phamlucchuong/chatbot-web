@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 
 export default function useSpeech({ lang = 'vi-VN' } = {}) {
   const recognitionRef = useRef(null)
@@ -70,116 +70,95 @@ export default function useSpeech({ lang = 'vi-VN' } = {}) {
     setIsRecording(false)
   }
 
-  // Text-to-speech (browser only)
-  const synthRef = useRef(typeof window !== 'undefined' ? window.speechSynthesis : null)
-  const utterRef = useRef(null)
+  const audioRef = useRef(null)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [playingMessageId, setPlayingMessageId] = useState(null)
-  const [voices, setVoices] = useState([])
-  const [selectedVoice, setSelectedVoice] = useState(null)
+  // Zalo TTS voices can be managed here if needed, for now, we use a default
+  const [selectedVoice] = useState('banmai') // Default Zalo voice
 
-  useEffect(() => {
-    if (!synthRef.current) return
-
-    const loadVoices = () => {
-      const v = synthRef.current.getVoices() || []
-      setVoices(v)
-      const vi = v.find(vo => vo.lang && vo.lang.toLowerCase().startsWith('vi'))
-        || v.find(vo => /viet|vietnam/i.test(vo.name))
-        || v.find(vo => /vietnamese/i.test(vo.lang))
-      if (vi) setSelectedVoice(vi)
+  const zaloTtsApi = async (text, voice = 'banmai', speed = 1.0) => {
+    // This should be an API call to your backend, which then calls Zalo AI
+    // For demonstration, this is a placeholder.
+    // In a real app, you'd have an API endpoint like '/api/tts/zalo'
+    // that takes { text, voice, speed } and returns the audio URL.
+    console.log(`Requesting TTS for: "${text}" with voice: ${voice}`)
+    // Replace with your actual backend API endpoint
+    // THAY THẾ "your_actual_zalo_api_key_here" BẰNG KHÓA API THỰC CỦA BẠN
+    const ZALO_API_KEY = import.meta.env.VITE_ZALO_API_KEY
+    const response = await fetch('https://api.zalo.ai/v1/tts/synthesize', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'apikey': ZALO_API_KEY,
+        },
+        body: new URLSearchParams({
+            input: text,
+            speaker_id: voice === 'banmai' ? 1 : 2, 
+            speed: speed,
+        })
+    });
+    const data = await response.json();
+    if (data && data.data && data.data.url) {
+        return data.data.url;
     }
-
-    loadVoices()
-    const synth = synthRef.current
-    if (synth) synth.onvoiceschanged = loadVoices
-    return () => { if (synth) synth.onvoiceschanged = null }
-  }, [])
-
-  const reloadVoices = () => {
-    if (!synthRef.current) return []
-    const v = synthRef.current.getVoices() || []
-    setVoices(v)
-    return v
+    throw new Error(data.message || 'Zalo TTS API failed');
   }
 
-  const ensureVoicesLoaded = (timeout = 1500) => {
-    return new Promise((resolve) => {
-      if (!synthRef.current) return resolve([])
-      const v = synthRef.current.getVoices() || []
-      if (v.length > 0) return resolve(v)
-      let resolved = false
-      const onVoices = () => {
-        if (resolved) return
-        const vv = synthRef.current.getVoices() || []
-        if (vv.length > 0) {
-          resolved = true
-          synthRef.current.onvoiceschanged = null
-          setVoices(vv)
-          resolve(vv)
-        }
-      }
-      synthRef.current.onvoiceschanged = onVoices
-      setTimeout(() => {
-        if (!resolved) {
-          resolved = true
-          if (synthRef.current) synthRef.current.onvoiceschanged = null
-          const vv = synthRef.current.getVoices() || []
-          setVoices(vv)
-          resolve(vv)
-        }
-      }, timeout)
-    })
-  }
+  const speak = async (text, { voice = null, rate = 1, messageId = null, speaker = 'bot' } = {}) => {
+    stopSpeaking() // Stop any currently playing audio
+    try {
+      const audioUrl = await zaloTtsApi(text, voice || selectedVoice, rate);
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
 
-  const speak = async (text, { voice = null, rate = 1, pitch = 1, messageId = null } = {}) => {
-    if (!('speechSynthesis' in window)) return
-    // stop any current speech
-    stopSpeaking()
-    if ((!voices || voices.length === 0) && synthRef.current) await ensureVoicesLoaded(1500)
-
-    let useVoice = voice || selectedVoice
-    if (!useVoice && voices && voices.length > 0) {
-      useVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('vi'))
-        || voices.find(v => /viet|vietnam/i.test(v.name))
-        || voices.find(v => /vietnamese/i.test(v.lang))
-        || voices[0]
+      audio.onplay = () => { // Chỉ nên kích hoạt khi bot nói
+        setIsSpeaking(true);
+        if (messageId !== null) setPlayingMessageId(messageId);
+      };
+      audio.onended = () => {
+        setIsSpeaking(false);
+        setPlayingMessageId(null);
+        audioRef.current = null;
+      };
+      audio.onerror = () => {
+        console.error('Error playing audio');
+        setIsSpeaking(false);
+        setPlayingMessageId(null);
+        audioRef.current = null;
+      };
+      audio.play();
+    } catch (error) {
+      console.error('Failed to get TTS audio from Zalo API:', error);
+      setIsSpeaking(false);
+      setPlayingMessageId(null);
     }
-
-    const u = new SpeechSynthesisUtterance(text)
-    u.lang = lang || (useVoice && useVoice.lang) || 'vi-VN'
-    u.rate = rate
-    u.pitch = pitch
-    if (useVoice) u.voice = useVoice
-    u.onstart = () => {
-      setIsSpeaking(true)
-      if (messageId !== null && messageId !== undefined) setPlayingMessageId(messageId)
-    }
-    u.onend = () => {
-      setIsSpeaking(false)
-      setPlayingMessageId(null)
-    }
-    u.onerror = () => {
-      setIsSpeaking(false)
-      setPlayingMessageId(null)
-    }
-    utterRef.current = u
-    try { synthRef.current.speak(u) } catch (e) { console.warn('speechSynthesis.speak failed', e) }
   }
 
   const stopSpeaking = () => {
-    if (synthRef.current && typeof synthRef.current.cancel === 'function') synthRef.current.cancel()
-    utterRef.current = null
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = ''; // Detach the source
+      audioRef.current = null;
+    }
     setIsSpeaking(false)
     setPlayingMessageId(null)
   }
 
-  const setVoiceByName = (name) => {
-    if (!voices || voices.length === 0) reloadVoices()
-    const match = (voices || []).find(v => v.name === name || (v.name || '').toLowerCase().includes((name || '').toLowerCase()))
-    if (match) setSelectedVoice(match)
-    return match
-  }
+  // Debounce function to prevent rapid API calls
+  const debounce = (func, delay) => {
+    let timeoutId;
+    return (...args) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        func.apply(this, args);
+      }, delay);
+    };
+  };
+
+  // Create a debounced version of the speak function.
+  // This will prevent 429 "Too Many Requests" errors if the user clicks rapidly.
+  // We use useCallback to ensure the debounced function is not recreated on every render.
+  const debouncedSpeak = useCallback(debounce(speak, 500), [selectedVoice]); // 500ms delay
 
   return {
     // recognition
@@ -190,16 +169,12 @@ export default function useSpeech({ lang = 'vi-VN' } = {}) {
     startRecognition,
     stopRecognition,
     // tts
-    speak,
+    speak, // The original function
+    debouncedSpeak, // The new debounced function
     stopSpeaking,
     isSpeaking,
     playingMessageId,
     // voices
-    voices,
     selectedVoice,
-    setSelectedVoice,
-    reloadVoices,
-    ensureVoicesLoaded,
-    setVoiceByName,
   }
 }

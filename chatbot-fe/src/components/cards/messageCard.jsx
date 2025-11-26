@@ -1,15 +1,15 @@
 
-import { useSpeechContext } from '../../contexts/SpeechContext'
+// import { useSpeechContext } from '../../contexts/SpeechContext'
 
 export default function MessageCard({ message }) {
-    const { speak, stopSpeaking, playingMessageId } = useSpeechContext()
+    // const { speak, stopSpeaking, playingMessageId } = useSpeechContext()
 
-    const isThisPlaying = playingMessageId !== null && playingMessageId === message.id
+    // const isThisPlaying = playingMessageId !== null && playingMessageId === message.id
 
-    const handlePlay = () => {
-      if (isThisPlaying) stopSpeaking()
-      else speak(message.content, { messageId: message.id })
-    }
+    // const handlePlay = () => {
+    //   if (isThisPlaying) stopSpeaking()
+    //   else speak(message.content, { messageId: message.id })
+    // }
 
     return (
         <div
@@ -24,11 +24,11 @@ export default function MessageCard({ message }) {
             >
                 <div className='flex items-start gap-3'>
                   <p className='whitespace-pre-wrap break-words flex-1'>{message.content}</p>
-                  {message.bot && (
+                  {/* {message.bot && (
                     <button onClick={handlePlay} className='ml-2 p-1 rounded-full message-play-btn' title={isThisPlaying ? 'Dừng nói' : 'Nghe'}>
                       <i className={`fa-solid ${isThisPlaying ? 'fa-stop' : 'fa-volume-high'}`}></i>
                     </button>
-                  )}
+                  )} */}
                 </div>
 
             </div>
