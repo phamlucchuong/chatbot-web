@@ -1,7 +1,16 @@
 
-
+// import { useSpeechContext } from '../../contexts/SpeechContext'
 
 export default function MessageCard({ message }) {
+    // const { speak, stopSpeaking, playingMessageId } = useSpeechContext()
+
+    // const isThisPlaying = playingMessageId !== null && playingMessageId === message.id
+
+    // const handlePlay = () => {
+    //   if (isThisPlaying) stopSpeaking()
+    //   else speak(message.content, { messageId: message.id })
+    // }
+
     return (
         <div
             key={message.id}
@@ -10,20 +19,18 @@ export default function MessageCard({ message }) {
             <div
                 className={`max-w-[70%] rounded-2xl px-4 py-3 ${message.bot === false
                     ? 'bg-blue-500 text-white'
-                    : 'bg-[#262628] text-gray-800'
+                    : 'message-bubble-bot'
                     }`}
             >
-                <p className='whitespace-pre-wrap break-words'>{message.content}</p>
-                {/* <p className={`text-xs mt-1 ${message.bot === false ? 'text-blue-100' : 'text-gray-500'
-                    }`}>
-                    {
-                        // Nếu message.createdAt là chuỗi, code tối ưu sẽ là:
-                        new Date(message.createdAt).toLocaleTimeString('vi-VN', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        })
-                    }
-                </p> */}
+                <div className='flex items-start gap-3'>
+                  <p className='whitespace-pre-wrap break-words flex-1'>{message.content}</p>
+                  {/* {message.bot && (
+                    <button onClick={handlePlay} className='ml-2 p-1 rounded-full message-play-btn' title={isThisPlaying ? 'Dừng nói' : 'Nghe'}>
+                      <i className={`fa-solid ${isThisPlaying ? 'fa-stop' : 'fa-volume-high'}`}></i>
+                    </button>
+                  )} */}
+                </div>
+
             </div>
         </div>
     );

@@ -7,6 +7,8 @@ import RegisterModal from './components/modals/RegisterModal'
 import { useLogout } from './hooks/useAuth'
 import { useChat } from './hooks/useChat'
 import Header from './layouts/Header'
+import { useSpeechContext } from './contexts/SpeechContext'
+import { showToast } from './utils/notify'
 import SideBar from './layouts/SideBar'
 
 function App() {
@@ -46,11 +48,13 @@ function App() {
 
           if (response && response.results) {
             // Transform backend data to frontend format
-            const transformedHistory = response.results.map(conv => ({
-              id: conv.id,
-              name: conv.name || "Cuộc trò chuyện",
-              createdAt: conv.createdAt,
-            }));
+            const transformedHistory = response.results
+              .map((conv) => ({
+                id: conv.id,
+                name: conv.name || "Cuộc trò chuyện",
+                createdAt: conv.createdAt,
+              }))
+              .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             setChatHistory(transformedHistory);
           }
         } catch (error) {
@@ -80,10 +84,20 @@ function App() {
     };
   }, [isDropdownOpen]);
 
-  // Auto scroll khi có tin nhắn mới
-  useEffect(() => {
+  // Hàm để cuộn xuống tin nhắn cuối cùng
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  };
+  
+  // Load tin nhắn của cuộc trò chuyện cuối cùng khi reload trang
+  useEffect(() => {
+    const lastChatId = localStorage.getItem("chatId");
+    if (lastChatId && isLoggedIn) {
+      console.log("Reloading last chat:", lastChatId);
+      handleSelectChat(lastChatId);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn]); // Chỉ chạy khi trạng thái đăng nhập được xác định
 
   const handleChange = (event) => {
     setContent(event.target.value); // Cập nhật state 'content' với giá trị mới từ textarea
@@ -111,8 +125,9 @@ function App() {
     localStorage.removeItem("auth");
     setIsLoggedIn(false);
     setIsDropdownOpen(false);
-    alert("Đã đăng xuất thành công!");
-    window.location.reload();
+    showToast('Đã đăng xuất thành công!', 'success');
+    // give user a brief moment to see the toast before reloading
+    setTimeout(() => window.location.reload(), 700);
   }
 
   const handleCloseLoginModal = () => {
@@ -155,31 +170,55 @@ function App() {
     setIsNewChat(false);
     localStorage.setItem("chatId", chatId);
 
-    const selectedChat = chatHistory.find(chat => chat.id === chatId);
+    const currentChatFromHistory = chatHistory.find(chat => chat.id === chatId);
 
     // Nếu messages đã được load trước đó, dùng cache
-    if (selectedChat && selectedChat.messages && selectedChat.messages.length > 0) {
-      setMessages(selectedChat.messages);
+    if (currentChatFromHistory && currentChatFromHistory.messages && currentChatFromHistory.messages.length > 0) {
+      console.log("Loading messages from cache for chat ID:", chatId);
+      const sortedMessages = [...currentChatFromHistory.messages].sort(
+        (a, b) => {
+          const dateA = new Date(a.timestamp);
+          const dateB = new Date(b.timestamp);
+          if (dateA.getTime() !== dateB.getTime()) {
+            return dateA.getTime() - dateB.getTime();
+          }
+          return (a.bot ? 1 : 0) - (b.bot ? 1 : 0); // Ưu tiên tin nhắn người dùng (bot: false) trước bot (bot: true)
+        }
+      );
+
+      setMessages(sortedMessages);
     } else {
+      setMessages([]); // Xóa tin nhắn cũ để hiển thị trạng thái loading
+      console.log("Fetching messages from backend for chatId:", chatId);
       // Load messages từ backend
       try {
         const response = await getMessages(localStorage.getItem("token"), chatId);
         console.log("Messages loaded:", response);
 
         if (response && response.results) {
-          const transformedMessages = response.results.map(msg => ({
-            id: msg.id,
-            bot: msg.bot,
-            content: msg.content,
-            timestamp: msg.createdAt
-          }));
+          const transformedMessages = response.results
+            .map((msg) => ({
+              id: msg.id,
+              bot: msg.bot,
+              content: msg.content,
+              timestamp: msg.createdAt,
+            }));
+          const sortedTransformedMessages = transformedMessages.sort((a, b) => {
+            const dateA = new Date(a.timestamp);
+            const dateB = new Date(b.timestamp);
+            if (dateA.getTime() !== dateB.getTime()) {
+              return dateA.getTime() - dateB.getTime();
+            }
+            return (a.bot ? 1 : 0) - (b.bot ? 1 : 0); // Ưu tiên tin nhắn người dùng (bot: false) trước bot (bot: true)
+          });
+          console.log("Messages from backend (sorted):", sortedTransformedMessages.map(m => ({ id: m.id, ts: m.timestamp, content: m.content.substring(0, 30) + "..." })));
 
-          setMessages(transformedMessages);
+          setMessages(sortedTransformedMessages);
 
           // Cập nhật cache trong chatHistory
           setChatHistory(prev => prev.map(chat =>
             chat.id === chatId
-              ? { ...chat, messages: transformedMessages }
+              ? { ...chat, messages: sortedTransformedMessages }
               : chat
           ));
         }
@@ -188,6 +227,11 @@ function App() {
         setMessages([]);
       }
     }
+    // Cuộn xuống dưới cùng sau khi tin nhắn được tải
+    // Sử dụng setTimeout để đảm bảo DOM đã được cập nhật
+    setTimeout(() => {
+      scrollToBottom();
+    }, 0);
   }
 
   // Xóa cuộc trò chuyện
@@ -211,105 +255,147 @@ function App() {
       }
     } catch (error) {
       console.error("Error deleting conversation:", error);
-      alert("Không thể xóa cuộc trò chuyện. Vui lòng thử lại!");
+        showToast('Không thể xóa cuộc trò chuyện. Vui lòng thử lại!', 'error');
     }
   }
 
   const handleValidate = () => {
     if (!isLoggedIn) {
-      alert("Vui lòng đăng nhập để sử dụng chức năng này.");
+      showToast('Vui lòng đăng nhập để sử dụng chức năng này.', 'error');
       setIsLoginModalOpen(true);
       return false;
     }
     return true;
   }
 
-  const handleSearch = async () => {
-    if (!handleValidate()) {
-      return;
-    }
+  // eslint-disable-next-line no-unused-vars
+  const { speak } = useSpeechContext()
 
-    const messageContent = content;
-    // Kiểm tra content không rỗng
-    if (!messageContent || messageContent.trim() === "") {
-      return;
-    }
-
-    let chatId = currentChatId || localStorage.getItem("chatId");
-    console.log("isNewChat:", isNewChat, "chatId:", chatId);
-
-    if (isNewChat || !chatId) {
-      console.log("Creating new chat...");
-      const response = await createNewChat(localStorage.getItem("token"), messageContent);
-      
-      if (response && response.results && response.results.id) {
-        chatId = response.results.id;
-        localStorage.setItem("chatId", chatId);
-        setCurrentChatId(chatId);
-        console.log("New chat created with ID:", chatId);
-        setIsNewChat(false);
-
-        // Thêm conversation mới vào chatHistory
-        const newChat = {
-          id: chatId,
-          title: response.results.name || "Cuộc trò chuyện mới",
-          createdAt: response.results.createdAt,
-          messages: []
-        };
-        setChatHistory(prev => [newChat, ...prev]);
-      } else {
-        console.error("Failed to create new chat, response:", response);
-        return;
-      }
-    }
-
-    console.log("Before sendMessage - chatId:", chatId, "messageContent:", messageContent);
-
-    const response = await sendMessage(localStorage.getItem("token"), chatId, messageContent);
-    console.log("sendMessage result:", response);
-
-    // Thêm cả user message và bot response vào UI
-    if (response && response.results) {
-      const userMessage = {
-        id: response.results.userMessage.id,
-        bot: false,
-        content: response.results.userMessage.content,
-        timestamp: response.results.userMessage.createdAt
-      };
-
-      const botMessage = {
-        id: response.results.botMessage.id,
-        bot: true,
-        content: response.results.botMessage.content || 'Xin lỗi, tôi không có câu trả lời.',
-        timestamp: response.results.botMessage.createdAt
-      };
-
-      setMessages(prev => [...prev, userMessage, botMessage]);
-
-      // Cập nhật chat history với messages mới
-      setChatHistory(prev => prev.map(chat =>
-        chat.id === chatId
-          ? { ...chat, messages: [...(chat.messages || []), userMessage, botMessage] }
-          : chat
-      ));
-    } else {
-      console.error("Failed to send message, response:", response);
-    }
-
-    setContent("");
-    setIsTyping(false);
+const handleSearch = async (overrideMessage) => {
+  if (!handleValidate()) {
+    return;
   }
+
+  const messageContent = overrideMessage ?? content;
+  // Kiểm tra content không rỗng
+  if (!messageContent || messageContent.trim() === "") {
+    return;
+  }
+
+  let chatId = currentChatId || localStorage.getItem("chatId");
+  console.log("isNewChat:", isNewChat, "chatId:", chatId);
+
+  if (isNewChat || !chatId) {
+    console.log("Creating new chat...");
+    const response = await createNewChat(localStorage.getItem("token"), messageContent);
+    
+    if (response && response.results && response.results.id) {
+      chatId = response.results.id;
+      localStorage.setItem("chatId", chatId);
+      setCurrentChatId(chatId);
+      console.log("New chat created with ID:", chatId);
+      setIsNewChat(false);
+
+      // Thêm conversation mới vào chatHistory
+      const newChat = {
+        id: chatId,
+        name: response.results.name || "Cuộc trò chuyện mới",
+        createdAt: response.results.createdAt,
+        messages: []
+      };
+      setChatHistory(prev => [newChat, ...prev].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+    } else {
+      console.error("Failed to create new chat, response:", response);
+      return;
+    }
+  }
+
+  // Hiển thị tin nhắn của người dùng ngay lập tức
+  const tempUserMessage = {
+    id: `temp-${Date.now()}`, // ID tạm thời
+    bot: false,
+    content: messageContent,
+    timestamp: new Date().toISOString(),
+  };
+  setMessages(prev => [...prev, tempUserMessage]); 
+  setTimeout(() => {
+    scrollToBottom();
+  }, 0);
+
+  // Xóa nội dung input và tắt trạng thái gõ phím
+  setContent("");
+  setIsTyping(false);
+
+  console.log("Before sendMessage - chatId:", chatId, "messageContent:", messageContent);
+
+  const response = await sendMessage(localStorage.getItem("token"), chatId, messageContent);
+  console.log("sendMessage result:", response);
+
+  // Thêm cả user message và bot response vào UI
+  if (response && response.results) {
+    const finalUserMessage = {
+      id: response.results.userMessage.id,
+      bot: false,
+      content: response.results.userMessage.content,
+      timestamp: response.results.userMessage.createdAt
+    };
+
+    const botResponseMessage = {
+      id: response.results.botMessage.id,
+      bot: true,
+      content: response.results.botMessage.content || 'Xin lỗi, tôi không có câu trả lời.',
+      timestamp: response.results.botMessage.createdAt
+    };
+
+    // Cập nhật tin nhắn: xóa tin nhắn tạm, thêm user message và bot message theo đúng thứ tự
+    setMessages(prevMessages => {
+      const messagesWithoutTemp = prevMessages.filter(msg => msg.id !== tempUserMessage.id);
+      const combinedMessages = [...messagesWithoutTemp, finalUserMessage, botResponseMessage];
+      return combinedMessages.sort((a, b) => {
+        const dateA = new Date(a.timestamp);
+        const dateB = new Date(b.timestamp);
+        if (dateA.getTime() !== dateB.getTime()) {
+          return dateA.getTime() - dateB.getTime();
+        }
+        return (a.bot ? 1 : 0) - (b.bot ? 1 : 0); // Ưu tiên tin nhắn người dùng (bot: false) trước bot (bot: true)
+      });
+    });
+    
+    setTimeout(() => {
+      scrollToBottom();
+    }, 0);
+
+    // Cập nhật chat history với messages mới
+    setChatHistory(prev => prev.map(chat => {
+      if (chat.id === chatId) {
+        const updatedMessages = [...(chat.messages || []), finalUserMessage, botResponseMessage].sort((a, b) => {
+          const dateA = new Date(a.timestamp);
+          const dateB = new Date(b.timestamp);
+          if (dateA.getTime() !== dateB.getTime()) { return dateA.getTime() - dateB.getTime(); }
+          return (a.bot ? 1 : 0) - (b.bot ? 1 : 0);
+        });
+        return { ...chat, messages: updatedMessages };
+      }
+      return chat;
+    }));
+    console.log("Updated chat history for chat ID:", chatId);
+  } else {
+    // Nếu có lỗi, xóa tin nhắn tạm của người dùng
+    setMessages(prev => prev.filter(msg => msg.id !== tempUserMessage.id));
+    console.error("Failed to send message, response:", response);
+  }
+}
 
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-[var(--bg)] text-[var(--text)]">
       <SideBar handleNewChat={handleNewChat} chatHistory={chatHistory} currentChatId={currentChatId} handleSelectChat={handleSelectChat} handleDeleteChat={handleDeleteChat}></SideBar>
 
       <div className="flex-1 flex flex-col">
         <Header dropdownRef={dropdownRef} isDropdownOpen={isDropdownOpen} handleUserIconClick={handleUserIconClick} isLoggedIn={isLoggedIn} handleLoginClick={handleLoginClick} handleLogout={handleLogout}></Header>
 
         <div className='flex-1 flex flex-col overflow-hidden'>
-          <div className='flex-1 overflow-y-auto py-10 px-4'>
+          <div className='flex-1 overflow-y-auto hide-scrollbar py-10 px-4'>
             {messages.length === 0 ? (
               <div className='flex justify-center items-center h-full'>
                 <span className="ombre-color text-2xl">Can i help you, sir!</span>
@@ -325,7 +411,13 @@ function App() {
             )}
           </div>
 
-          <InputBox content={content} handleChange={handleChange} isTyping={isTyping} handleSearch={handleSearch}></InputBox>
+          <InputBox
+            content={content}
+            handleChange={handleChange}
+            isTyping={isTyping}
+            handleSearch={handleSearch}
+          />
+          
         </div>
       </div>
 

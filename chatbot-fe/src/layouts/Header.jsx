@@ -1,46 +1,23 @@
+import React from 'react'
+import useTheme from '../hooks/useTheme'
 
+export default function Header() {
+    const { theme, toggleTheme } = useTheme()
 
-
-export default function Header({dropdownRef, isDropdownOpen, handleUserIconClick, isLoggedIn, handleLoginClick, handleLogout}) {
     return (
-        <header className="flex justify-between items-center z-100 px-20 py-5 border-b border-gray-600">
-          <div className="text-lg items-center flex gap-3 font-bold text-white cursor-pointer">
-            <i className="fa-solid fa-robot"></i>
-            <span>Chat skibidi</span>
-          </div>
-
-          <div className="relative" ref={dropdownRef}>
-            <div onClick={handleUserIconClick} className='text-4xl cursor-pointer px-3 border-b border-gray-500 hover:opacity-80 transition-opacity'>
-              {
-                isLoggedIn
-                ? <i className="fa-brands fa-accessible-icon"></i>
-                : <i className="fa-solid fa-wheelchair"></i>
-              }
+        <header className="z-100 px-6 md:px-20 py-3 border-b border-theme transition-colors">
+          <div className="flex items-center justify-between">
+            <div className="text-lg items-center flex gap-3 font-bold text-[var(--text)] cursor-pointer">
+              <i className="fa-solid fa-robot"></i>
+              <span>Chat skibidi</span>
             </div>
 
-            {isDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-[#262628] rounded-lg shadow-lg border border-transparent transition-colors hover:border-gray-500 py-2 z-50">
-                {!isLoggedIn ? (
-                  <button
-                    onClick={handleLoginClick}
-                    className="w-full text-left px-4 py-2 text-sm text-white transition-colors flex items-center gap-2"
-                  >
-                    <i className="fa-solid fa-right-to-bracket"></i>
-                    Đăng nhập
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 text-sm text-white transition-colors flex items-center gap-2"
-                  >
-                    <i className="fa-solid fa-right-from-bracket"></i>
-                    Đăng xuất
-                  </button>
-                )}
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              <button onClick={toggleTheme} title="Chuyển giao diện" className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-400">
+                {theme === 'dark' ? <i className="fa-solid fa-sun"></i> : <i className="fa-solid fa-moon text-black"></i>}
+              </button>
+            </div>
           </div>
         </header>
-    );
-
+    )
 }

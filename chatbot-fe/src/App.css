@@ -1,12 +1,11 @@
 body {
-    /* background-color: var(--main-color); */
-    background-color: #282A2C;
+    background-color: var(--bg);
 }
 
 .textbox {
     min-height: 110px;
     width: 760px;
-    border: solid 1px #767676;
+    border: solid 1px var(--border);
     border-radius: 25px;
     position: absolute;
     bottom: 45px;
@@ -28,7 +27,7 @@ body {
 }
 
 #input::placeholder, .search-icon, .deepSearch > span, .icon, #plus-icon {
-    color: #B3B9C1;
+    color: var(--muted);
     cursor: pointer;
 }
 
@@ -45,19 +44,16 @@ body {
 .textbox--bottom-left {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    width: 200px;
 }
 
 #plus-icon, .textbox--bottom-right {
-    width: 40px;
     height: 40px;
     font-size: 20px;
     border-radius: 50%;
 }
 
-#plus-icon:hover, .textbox--bottom-right:hover {
-    background-color: #636363;
+#plus-icon:hover{
+    background-color: var(--border);
 }
 
 #plus-icon {
@@ -65,7 +61,7 @@ body {
 }
 
 #plus-icon > i {
-    color: #B3B9C1;
+    color: var(--muted);
 
 }
 
@@ -76,11 +72,11 @@ body {
 }
 
 .deepSearch:hover > i, .deepSearch:hover > span{
-    color: white;
+    color: var(--text);
 }
 
 #plus-icon, .deepSearch, .textbox--bottom-right {
-    background-color: #262628;
+    background-color: var(--surface);
     line-height: 40px;
     text-align: center;
 }
@@ -124,7 +120,7 @@ li:hover {
 
 * {
     font-family: Arial, Helvetica, sans-serif;
-    color: white;
+    color: var(--text);
     box-sizing: border-box;
 }
 
