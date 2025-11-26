@@ -1,3 +1,4 @@
+
 INSERT INTO diseases (id, name, description, symptoms, causes, preventions) VALUES 
 ('D001', 
 'Cảm lạnh thông thường', 
