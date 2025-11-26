@@ -1,6 +1,5 @@
 package com.example.bigfood.dto.response;
 
-import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,8 +14,8 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ConversationResponse {
+public class SimilarDiseaseResponse {
     String id;
     String name;
-    LocalDateTime createdAt;
+    float similarity;
 }

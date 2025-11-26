@@ -29,5 +29,4 @@ public class Disease {
     String symptoms;
     String causes;
     String preventions;
-    String treatment;
 }

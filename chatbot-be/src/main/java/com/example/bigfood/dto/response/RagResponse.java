@@ -1,6 +1,7 @@
 package com.example.bigfood.dto.response;
 
-import java.time.LocalDateTime;
+import java.util.List;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,8 +16,11 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ConversationResponse {
-    String id;
-    String name;
-    LocalDateTime createdAt;
+public class RagResponse {
+    boolean success;
+    String disease_id;
+    String disease_name;
+    String response;
+    List<SimilarDiseaseResponse> similar_diseases;
+    String error;
 }

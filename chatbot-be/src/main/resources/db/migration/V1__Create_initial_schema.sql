@@ -39,8 +39,7 @@ CREATE TABLE diseases (
     description TEXT,
     symptoms TEXT,
     causes TEXT,
-    preventions TEXT,
-    treatment TEXT
+    preventions TEXT
 );
 
 -- Thêm chỉ mục cho user_id (để tìm kiếm conversations của một user nhanh hơn)
