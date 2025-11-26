@@ -100,6 +100,7 @@ export default function InputBox({ content, handleChange, handleSearch }) {
       </div>
 
       <PricingModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
+      <p className='text-center text-xs text-gray-500 m-4'>Thông tin chỉ mang tính chất tham khảo. Bạn nên đến cơ sở y tế để được thăm khám chính xác</p>
     </div>
 
     

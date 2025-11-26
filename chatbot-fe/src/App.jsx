@@ -48,11 +48,13 @@ function App() {
 
           if (response && response.results) {
             // Transform backend data to frontend format
-            const transformedHistory = response.results.map(conv => ({
-              id: conv.id,
-              name: conv.name || "Cuộc trò chuyện",
-              createdAt: conv.createdAt,
-            }));
+            const transformedHistory = response.results
+              .map((conv) => ({
+                id: conv.id,
+                name: conv.name || "Cuộc trò chuyện",
+                createdAt: conv.createdAt,
+              }))
+              .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             setChatHistory(transformedHistory);
           }
         } catch (error) {
@@ -86,6 +88,16 @@ function App() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Load tin nhắn của cuộc trò chuyện cuối cùng khi reload trang
+  useEffect(() => {
+    const lastChatId = localStorage.getItem("chatId");
+    if (lastChatId && isLoggedIn) {
+      console.log("Reloading last chat:", lastChatId);
+      handleSelectChat(lastChatId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn]); // Chỉ chạy khi trạng thái đăng nhập được xác định
 
   const handleChange = (event) => {
     setContent(event.target.value); // Cập nhật state 'content' với giá trị mới từ textarea
@@ -170,12 +182,14 @@ function App() {
         console.log("Messages loaded:", response);
 
         if (response && response.results) {
-          const transformedMessages = response.results.map(msg => ({
-            id: msg.id,
-            bot: msg.bot,
-            content: msg.content,
-            timestamp: msg.createdAt
-          }));
+          const transformedMessages = response.results
+            .map((msg) => ({
+              id: msg.id,
+              bot: msg.bot,
+              content: msg.content,
+              timestamp: msg.createdAt,
+            }))
+            .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
           setMessages(transformedMessages);
 
@@ -227,6 +241,7 @@ function App() {
     return true;
   }
 
+  // eslint-disable-next-line no-unused-vars
   const { speak } = useSpeechContext()
 
   const handleSearch = async (overrideMessage) => {
@@ -257,11 +272,11 @@ function App() {
         // Thêm conversation mới vào chatHistory
         const newChat = {
           id: chatId,
-          title: response.results.name || "Cuộc trò chuyện mới",
+          name: response.results.name || "Cuộc trò chuyện mới",
           createdAt: response.results.createdAt,
           messages: []
         };
-        setChatHistory(prev => [newChat, ...prev]);
+        setChatHistory(prev => [newChat, ...prev].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
       } else {
         console.error("Failed to create new chat, response:", response);
         return;
@@ -289,13 +304,15 @@ function App() {
         timestamp: response.results.botMessage.createdAt
       };
 
-      setMessages(prev => [...prev, userMessage, botMessage]);
+      // Tối ưu: Nối tin nhắn mới vào cuối mảng để đảm bảo thứ tự User -> Bot
+      setMessages((prev) => [...prev, userMessage, botMessage]);
 
       // TTS is not auto-played. User can click the speaker on a message to play it.
 
       // Cập nhật chat history với messages mới
       setChatHistory(prev => prev.map(chat =>
         chat.id === chatId
+          // Tối ưu: Nối tin nhắn mới vào cache mà không cần sắp xếp lại
           ? { ...chat, messages: [...(chat.messages || []), userMessage, botMessage] }
           : chat
       ));
@@ -338,6 +355,7 @@ function App() {
             isTyping={isTyping}
             handleSearch={handleSearch}
           />
+          
         </div>
       </div>
 
