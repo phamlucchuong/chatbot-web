@@ -17,6 +17,7 @@ import com.example.bigfood.dto.response.ChatResponse;
 import com.example.bigfood.dto.response.ConversationResponse;
 import com.example.bigfood.dto.response.MessageResponse;
 import com.example.bigfood.dto.response.PredictResponse;
+import com.example.bigfood.dto.response.RagResponse;
 import com.example.bigfood.dto.response.SymptomResponse;
 import com.example.bigfood.entity.Conversation;
 import com.example.bigfood.entity.Disease;
@@ -133,7 +134,6 @@ public class ConversationService {
                 + "\n\nCác triệu chứng chính bao gồm: " + disease.getSymptoms()
                 + "\n\nNhững nguyên nhân dẫn đến bệnh: " + disease.getCauses()
                 + "\n\nBiện pháp phòng ngừa: " + disease.getPreventions()
-                + "\n\nPhương pháp điều trị: " + disease.getTreatment()
                 + "\n\nVui lòng tham khảo ý kiến bác sĩ để được chẩn đoán chính xác và điều trị phù hợp.";
 
     }
@@ -203,9 +203,17 @@ public class ConversationService {
                         .build())
                     .build();
             } else {
-                Disease disease = diseaseRepository.findById(predictResponse.getDisease_id())
-                        .orElseThrow(() -> new AppException(ErrorCode.DISEASE_NOT_FOUND));
-                botResponseContent = handlePredictDiseaseChat(disease);
+                // Disease disease = diseaseRepository.findById(predictResponse.getDisease_id())
+                //         .orElseThrow(() -> new AppException(ErrorCode.DISEASE_NOT_FOUND));
+                // botResponseContent = handlePredictDiseaseChat(disease);
+                RagResponse ragResponse = modelApiService.ragResponse(
+                    com.example.bigfood.dto.request.RagRequest.builder()
+                        .disease_id(predictResponse.getDisease_id())
+                        .user_query(request.getContent())
+                        .build()
+                );
+
+                botResponseContent = ragResponse.getResponse();
             }
         }
 

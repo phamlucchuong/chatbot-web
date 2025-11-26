@@ -12,8 +12,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.example.bigfood.dto.request.PredictDiseaseRequest;
+import com.example.bigfood.dto.request.RagRequest;
 import com.example.bigfood.dto.request.SearchRequest;
 import com.example.bigfood.dto.response.PredictResponse;
+import com.example.bigfood.dto.response.RagResponse;
 import com.example.bigfood.dto.response.SymptomResponse;
 
 import lombok.AccessLevel;
@@ -29,11 +31,14 @@ public class ModelApiService {
 
     final RestTemplate restTemplate;
 
-    @Value("${model.sympton.api.url:http://127.0.0.1:8000/api/extract-symptoms}")
-    String symptonApiUrl;
+    @Value("${model.symptom.api.url}")
+    String symptomApiUrl;
 
-    @Value("${model.predict.api.url:http://127.0.0.1:8000/api/predict-disease}")
+    @Value("${model.predict.api.url}")
     String predictApiUrl;
+    
+    @Value("${model.rag-response.api.url}")
+    String ragApiUrl;
 
 
 
@@ -45,7 +50,7 @@ public class ModelApiService {
             HttpEntity<SearchRequest> entity = new HttpEntity<>(userMessage, headers);
 
             ResponseEntity<SymptomResponse> response = restTemplate.exchange(
-                    symptonApiUrl, // URL tới endpoint /extract-symton
+                    symptomApiUrl, // URL tới endpoint /extract-symton
                     HttpMethod.POST,
                     entity,
                     SymptomResponse.class // Lớp Java mong đợi nhận về
@@ -79,6 +84,30 @@ public class ModelApiService {
                     HttpMethod.POST,
                     entity,
                     PredictResponse.class);
+            return response.getBody();
+        } catch (Exception e) {
+            log.error("Error calling predict API: {}", e.getMessage());
+            throw new RuntimeException("Failed to predict disease", e);
+        }
+    }
+
+    public RagResponse ragResponse(RagRequest ragRequest) {
+        try {
+            RagRequest request = RagRequest.builder()
+                    .disease_id(ragRequest.getDisease_id())
+                    .user_query(ragRequest.getUser_query())
+                    .build();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<RagRequest> entity = new HttpEntity<>(request, headers);
+
+            ResponseEntity<RagResponse> response = restTemplate.exchange(
+                    ragApiUrl,
+                    HttpMethod.POST,
+                    entity,
+                    RagResponse.class);
             return response.getBody();
         } catch (Exception e) {
             log.error("Error calling predict API: {}", e.getMessage());
