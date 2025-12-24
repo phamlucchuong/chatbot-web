@@ -1,7 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import 'leaflet-routing-machine';
+import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 
 // Fix lỗi icon mặc định của Leaflet trong React
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -29,20 +31,69 @@ const MapBounds = ({ points }) => {
     return null;
 };
 
+// Component xử lý chỉ đường
+const RoutingControl = ({ userLocation, destination }) => {
+    const map = useMap();
+
+    useEffect(() => {
+        if (!map || !userLocation || !destination) return;
+
+        const routingControl = L.Routing.control({
+            waypoints: [
+                L.latLng(userLocation.lat, userLocation.lng),
+                L.latLng(destination.lat, destination.lng)
+            ],
+            routeWhileDragging: false,
+            lineOptions: {
+                styles: [{ color: "#3b82f6", weight: 5 }]
+            },
+            show: true, // Hiển thị bảng hướng dẫn (turn-by-turn)
+            addWaypoints: false,
+            draggableWaypoints: false,
+            fitSelectedRoutes: true,
+            createMarker: () => null // Không tạo thêm marker mặc định của routing machine
+        }).addTo(map);
+
+        return () => map.removeControl(routingControl);
+    }, [map, userLocation, destination]);
+
+    return null;
+};
+
 const HospitalMapCard = ({ hospitals, userLocation }) => {
+    const [routingHospital, setRoutingHospital] = useState(null);
+
     const handleDirection = (hospital) => {
-        // Mở Google Maps chỉ đường từ vị trí người dùng đến bệnh viện
-        const url = `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${hospital.lat},${hospital.lng}&travelmode=driving`;
-        window.open(url, '_blank');
+        setRoutingHospital(hospital);
+    };
+
+    const handleExitDirection = () => {
+        setRoutingHospital(null);
     };
 
     return (
         <div className="w-full rounded-xl overflow-hidden border border-gray-200 shadow-sm bg-white my-2">
+            <style>{`
+                .leaflet-routing-container, .leaflet-routing-container * {
+                    color: black !important;
+                }
+                .leaflet-routing-container {
+                    background-color: white !important;
+                }
+            `}</style>
             {/* Header */}
-            <div className="px-4 py-2 border-b bg-gray-50">
-                <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+            <div className="px-4 py-2 border-b bg-gray-50 flex justify-between items-center">
+                <h2 className="text-sm font-bold text-black flex items-center gap-2">
                     📍 Bản đồ bệnh viện lân cận
                 </h2>
+                {routingHospital && (
+                    <button 
+                        onClick={handleExitDirection}
+                        className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition-colors"
+                    >
+                        Thoát chỉ đường
+                    </button>
+                )}
             </div>
             
             {/* Map Content */}
@@ -61,6 +112,10 @@ const HospitalMapCard = ({ hospitals, userLocation }) => {
                                     ...hospitals.map(h => [h.lat, h.lng])
                                 ]} 
                             />
+
+                            {/* Hiển thị đường đi nếu có bệnh viện được chọn */}
+                            {routingHospital && <RoutingControl userLocation={userLocation} destination={routingHospital} />}
+
                             <TileLayer
                                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -69,7 +124,7 @@ const HospitalMapCard = ({ hospitals, userLocation }) => {
                             {/* Vị trí người dùng */}
                             <Marker position={[userLocation.lat, userLocation.lng]}>
                                 <Popup>
-                                    <div className="font-bold text-blue-600">Vị trí của bạn</div>
+                                    <div className="font-bold text-black">Vị trí của bạn</div>
                                 </Popup>
                             </Marker>
 
@@ -80,8 +135,8 @@ const HospitalMapCard = ({ hospitals, userLocation }) => {
                                     position={[hospital.lat, hospital.lng]}
                                 >
                                     <Popup>
-                                        <div className="font-semibold text-sm">{hospital.name}</div>
-                                        <div className="text-xs text-gray-600 mt-1">
+                                        <div className="font-semibold text-sm text-black">{hospital.name}</div>
+                                        <div className="text-xs text-black mt-1">
                                             Cách bạn khoảng {calculateDistance(userLocation.lat, userLocation.lng, hospital.lat, hospital.lng).toFixed(2)} km
                                         </div>
                                         <button 

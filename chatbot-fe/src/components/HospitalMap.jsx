@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MapPin, Navigation } from 'lucide-react';
+import { MapPin, Navigation, X } from 'lucide-react';
 
 const HospitalMap = ({ hospitals = [] }) => {
   const [map, setMap] = useState(null);
@@ -86,7 +86,7 @@ const HospitalMap = ({ hospitals = [] }) => {
         })
       })
         .addTo(map)
-        .bindPopup(`<strong>${hospital.name}</strong>`)
+        .bindPopup(`<strong style="color: black;">${hospital.name}</strong>`)
         .on('click', () => {
           setSelectedHospital(hospital);
           map.setView([hospital.lat, hospital.lng], 15);
@@ -106,6 +106,15 @@ const HospitalMap = ({ hospitals = [] }) => {
   const openGoogleMaps = (hospital) => {
     const url = `https://www.google.com/maps/dir/?api=1&destination=${hospital.lat},${hospital.lng}`;
     window.open(url, '_blank');
+  };
+
+  // Khôi phục hiển thị toàn bộ (Thoát chế độ chọn)
+  const resetView = () => {
+    setSelectedHospital(null);
+    if (map && window.L && hospitals.length > 0) {
+      const bounds = window.L.latLngBounds(hospitals.map(h => [h.lat, h.lng]));
+      map.fitBounds(bounds, { padding: [30, 30] });
+    }
   };
 
   // Loading state
@@ -130,10 +139,21 @@ const HospitalMap = ({ hospitals = [] }) => {
         {hospitals.length > 0 && (
           <div className="absolute top-2 left-2 bg-white px-2 py-1 rounded-full shadow-md z-[400] flex items-center gap-1.5">
             <MapPin size={14} className="text-red-500" />
-            <span className="text-xs font-semibold text-gray-700">
+            <span className="text-xs font-semibold text-black">
               {hospitals.length} bệnh viện
             </span>
           </div>
+        )}
+
+        {/* Nút thoát chế độ chọn */}
+        {selectedHospital && (
+          <button
+            onClick={resetView}
+            className="absolute top-2 right-2 bg-white px-2 py-1 rounded shadow-md z-[400] flex items-center gap-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+          >
+            <X size={14} />
+            <span>Thoát chọn</span>
+          </button>
         )}
       </div>
 
@@ -161,10 +181,10 @@ const HospitalMap = ({ hospitals = [] }) => {
                 
                 {/* Thông tin bệnh viện */}
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-gray-800 text-sm mb-0.5">
+                  <h4 className="font-semibold text-black text-sm mb-0.5">
                     {hospital.name}
                   </h4>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-black">
                     {hospital.lat.toFixed(6)}, {hospital.lng.toFixed(6)}
                   </p>
                 </div>
@@ -188,7 +208,7 @@ const HospitalMap = ({ hospitals = [] }) => {
 
       {/* Thông báo khi không có dữ liệu */}
       {hospitals.length === 0 && (
-        <div className="p-6 text-center text-gray-500">
+        <div className="p-6 text-center text-black">
           <MapPin size={32} className="mx-auto mb-2 text-gray-300" />
           <p className="text-xs">Không có dữ liệu bệnh viện</p>
         </div>
