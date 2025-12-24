@@ -4,12 +4,14 @@ import MessageCard from './components/cards/MessageCard'
 import InputBox from './components/inputs/InputBox'
 import LoginModal from './components/modals/LoginModal'
 import RegisterModal from './components/modals/RegisterModal'
+import HospitalMapModal from './components/modals/HospitalMapModal'
 import { useLogout } from './hooks/useAuth'
 import { useChat } from './hooks/useChat'
 import Header from './layouts/Header'
 import { useSpeechContext } from './contexts/SpeechContext'
 import { showToast } from './utils/notify'
 import SideBar from './layouts/SideBar'
+import { getNearbyHospitalsApi } from './api/appApi'
 
 function App() {
 
@@ -271,6 +273,78 @@ function App() {
   // eslint-disable-next-line no-unused-vars
   const { speak } = useSpeechContext()
 
+  const handleFindNearbyHospitals = () => {
+    if (!navigator.geolocation) {
+      showToast("Trình duyệt không hỗ trợ định vị.", "error");
+      return;
+    }
+
+    // Hiển thị tin nhắn đang xử lý
+    const loadingId = `loading-${Date.now()}`;
+    setMessages(prev => [...prev, {
+      id: loadingId,
+      bot: true,
+      content: "Đang tìm kiếm các bệnh viện gần bạn...",
+      timestamp: new Date().toISOString()
+    }]);
+    setTimeout(scrollToBottom, 0);
+
+    // Hàm xử lý logic gọi API và cập nhật UI
+    const processLocation = async (latitude, longitude) => {
+      try {
+        const data = await getNearbyHospitalsApi(localStorage.getItem("token"), latitude, longitude);
+        setMessages(prev => {
+          const filtered = prev.filter(m => m.id !== loadingId);
+          let content = "";
+          
+          // Lấy danh sách từ data.results vì backend trả về ApiResponse
+          const hospitals = data?.results || [];
+
+          if (hospitals.length > 0) {
+            // Chỉ liệt kê 3 bệnh viện đầu tiên trong text để tin nhắn gọn gàng
+            const list = hospitals.slice(0, 3).map(h => `- ${h.name}`).join("\n");
+            const more = hospitals.length > 3 ? `\n...và ${hospitals.length - 3} địa điểm khác.` : "";
+            content = `🏥 Tìm thấy ${hospitals.length} bệnh viện gần bạn:\n${list}${more}`;
+            
+            // Trả về tin nhắn kèm dữ liệu bản đồ
+            return [...filtered, { 
+              id: `hosp-${Date.now()}`, 
+              bot: true, 
+              content, 
+              timestamp: new Date().toISOString(),
+              hospitals: hospitals,
+              userLocation: { lat: latitude, lng: longitude }
+            }];
+          } else {
+            content = "Không tìm thấy bệnh viện nào trong bán kính 5km.";
+            return [...filtered, { id: `hosp-${Date.now()}`, bot: true, content, timestamp: new Date().toISOString() }];
+          }
+        });
+        setTimeout(scrollToBottom, 0);
+      } catch (error) {
+        console.error("Error fetching hospitals:", error);
+        showToast(error.message || "Lỗi kết nối đến server.", "error");
+        setMessages(prev => prev.filter(m => m.id !== loadingId));
+      }
+    };
+
+    if (!navigator.geolocation) {
+      showToast("Trình duyệt không hỗ trợ định vị.", "error");
+      setMessages(prev => prev.filter(m => m.id !== loadingId));
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => processLocation(position.coords.latitude, position.coords.longitude),
+      (error) => {
+        console.error("Lỗi lấy vị trí:", error);
+        showToast("Không thể lấy vị trí. Hãy cấp quyền truy cập vị trí.", "error");
+        setMessages(prev => prev.filter(m => m.id !== loadingId));
+      }, 
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  };
+
 const handleSearch = async (overrideMessage) => {
   if (!handleValidate()) {
     return;
@@ -280,6 +354,24 @@ const handleSearch = async (overrideMessage) => {
   // Kiểm tra content không rỗng
   if (!messageContent || messageContent.trim() === "") {
     return;
+  }
+
+  // KIỂM TRA TỪ KHÓA TÌM BỆNH VIỆN
+  const lowerContent = messageContent.toLowerCase();
+  if ((lowerContent.includes("bệnh viện") || lowerContent.includes("trạm xá")) && lowerContent.includes("gần")) {
+    // Hiển thị tin nhắn người dùng
+    const tempUserMessage = {
+      id: `temp-${Date.now()}`,
+      bot: false,
+      content: messageContent,
+      timestamp: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, tempUserMessage]);
+    setContent("");
+    setIsTyping(false);
+    
+    handleFindNearbyHospitals();
+    return; // Dừng xử lý, không gửi xuống AI backend
   }
 
   let chatId = currentChatId || localStorage.getItem("chatId");
@@ -404,11 +496,34 @@ const handleSearch = async (overrideMessage) => {
 
               <div className='max-w-3xl mx-auto space-y-4'>
                 {messages.map((message) => (
-                  <MessageCard key={message.id} message={message} />
+                  <div key={message.id} className="flex flex-col gap-2">
+                    <MessageCard message={message} />
+                    {/* Hiển thị bản đồ nếu tin nhắn có dữ liệu hospitals */}
+                    {message.hospitals && message.userLocation && (
+                      <div className="w-full pl-2 pr-2 md:pl-12 animate-fade-in-up">
+                        <HospitalMapModal 
+                          hospitals={message.hospitals} 
+                          userLocation={message.userLocation} 
+                        />
+                      </div>
+                    )}
+                  </div>
                 ))}
                 <div ref={messagesEndRef} />
               </div>
             )}
+          </div>
+
+          <div className="flex justify-center pb-2 px-4">
+            <button
+              onClick={handleFindNearbyHospitals}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-sm shadow-md transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+              </svg>
+              Tìm bệnh viện gần đây
+            </button>
           </div>
 
           <InputBox

@@ -141,14 +141,13 @@ public class MapService {
         public List<HospitalResponse> findNearbyHospitals(double lat, double lng, int radius) {
 
                 // Xây dựng URL với tham số
-                String query = """
-                                [out:json][timeout:15];
-                                (
-                                  way["amenity"="hospital"](around:%d,%f,%f);
-                                );
-                                out center tags;
-                                """.formatted(radius, lat, lng);
-
+                String query = String.format(java.util.Locale.US, """
+            [out:json][timeout:15];
+            (
+              way["amenity"="hospital"](around:%d,%f,%f);
+            );
+            out center tags;
+            """, radius, lat, lng);
                 OverpassResponse response = overpassWebClient.post()
                                 .uri("/api/interpreter")
                                 .header("Content-Type", "text/plain")
@@ -164,5 +163,7 @@ public class MapService {
                         hospital.setName(element.getTags().get("name"));
                         return hospital;
                 }).toList();
-        }
-}
+                
+        
+    }}
+
