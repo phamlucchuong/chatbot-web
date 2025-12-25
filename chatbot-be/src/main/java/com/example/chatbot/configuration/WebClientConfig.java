@@ -7,10 +7,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
 public class WebClientConfig {
-
-    @Value("${openmap.api.key}")
-    private String openMapApiKey;
-
     @Bean
     public WebClient goongWebClient() {
         return WebClient.builder()

@@ -41,6 +41,7 @@ const LoginModal = ({ isOpen, onClose = NO_OP, onSwitchToRegister = NO_OP }) => 
             console.log("Đăng nhập thành công:", response);
             localStorage.setItem("token", response.results.token);
             localStorage.setItem("auth", true);
+            console.log("Token lưu trong localStorage:", localStorage.getItem("token"));
             showToast('Đăng nhập thành công!', 'success');
             handleClose();
         }

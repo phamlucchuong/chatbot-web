@@ -114,3 +114,55 @@ export async function deleteConversationApi(token, conversation_id) {
         console.error("Lỗi khi xóa conversation:", error);
     }
 }
+
+export async function getNearbyHospitalsApi(token, lat, lng) {
+    // return new Promise((resolve) => {
+    //     setTimeout(() => {
+    //         resolve({
+    //             results: [
+    //                 {
+    //                     name: "Bệnh viện Đa khoa Quốc tế (Mock FE)",
+    //                     lat: parseFloat(lat) + 0.002,
+    //                     lng: parseFloat(lng) + 0.002
+    //                 },
+    //                 {
+    //                     name: "Phòng khám Bác sĩ Gia đình (Mock FE)",
+    //                     lat: parseFloat(lat) - 0.002,
+    //                     lng: parseFloat(lng) - 0.002
+    //                 },
+    //                 {
+    //                     name: "Trung tâm Y tế Quận (Mock FE)",
+    //                     lat: parseFloat(lat) + 0.001,
+    //                     lng: parseFloat(lng) - 0.003
+    //                 },
+    //                 {
+    //                     name: "Bệnh viện Mắt Sài Gòn (Mock FE)",
+    //                     lat: parseFloat(lat) - 0.003,
+    //                     lng: parseFloat(lng) + 0.001
+    //                 }
+    //             ]
+    //         });
+    //     }, 800);
+    // });
+    try {
+        const response = await fetch(
+            `http://localhost:8080/healthcare/api/hospitals/nearby?lat=${lat}&lng=${lng}`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    authorization: `Bearer ${token}`,
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`API Error: ${response.status} ${response.statusText}`);
+        }
+
+        return response.json();
+    } catch (error) {
+        console.error("Lỗi khi tìm bệnh viện gần đây:", error);
+        throw error; // Ném lỗi để App.jsx bắt được và hiển thị Toast
+    }
+}
