@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -20,7 +21,6 @@ import com.example.chatbot.dto.response.PredictResponse;
 import com.example.chatbot.dto.response.RagResponse;
 import com.example.chatbot.dto.response.SymptomResponse;
 import com.example.chatbot.entity.Conversation;
-import com.example.chatbot.entity.Disease;
 import com.example.chatbot.entity.Message;
 import com.example.chatbot.entity.User;
 import com.example.chatbot.enums.ErrorCode;
@@ -28,7 +28,6 @@ import com.example.chatbot.exception.AppException;
 import com.example.chatbot.mapper.ConversationMapper;
 import com.example.chatbot.mapper.MessageMapper;
 import com.example.chatbot.repository.ConversationRepository;
-import com.example.chatbot.repository.DiseaseRepository;
 import com.example.chatbot.repository.MessageRepository;
 
 import lombok.AccessLevel;
@@ -44,14 +43,16 @@ public class ConversationService {
 
     ConversationRepository conversationRepository;
     MessageRepository messageRepository;
-    DiseaseRepository diseaseRepository;
     ConversationMapper conversationMapper;
     UserService userService;
     MessageMapper messageMapper;
     ModelApiService modelApiService;
 
     static final Map<String, Set<String>> SYMPTOM_CONTEXT = new ConcurrentHashMap<>();
-    static final Map<String, Integer> REQUEST_LIMIT = new ConcurrentHashMap<>(); // Giới hạn số triệu chứng trong ngữ cảnh
+    static final Map<String, Integer> REQUEST_LIMIT = new ConcurrentHashMap<>(); // Giới hạn số triệu chứng trong ngữ
+                                                                                 // cảnh
+    static String CURRENT_DISEASE_ID = "";
+    Random random = new Random();
 
     /**
      * Xử lý các câu hỏi đơn giản, dựa trên luật (keywords).
@@ -129,14 +130,51 @@ public class ConversationService {
         }
     }
 
-    private String handlePredictDiseaseChat(Disease disease) {
-        return "Dựa trên các triệu chứng bạn cung cấp, có thể bạn đang mắc phải: " + disease.getName()
-                + "\n\nĐây là một căn bệnh phổ biến ở Việt Nam. " + disease.getDescription()
-                + "\n\nCác triệu chứng chính bao gồm: " + disease.getSymptoms()
-                + "\n\nNhững nguyên nhân dẫn đến bệnh: " + disease.getCauses()
-                + "\n\nBiện pháp phòng ngừa: " + disease.getPreventions()
-                + "\n\nVui lòng tham khảo ý kiến bác sĩ để được chẩn đoán chính xác và điều trị phù hợp.";
+    private String genCallBackResponse(String diseaseName) {
+        List<String> responses = List.of(
+                // Câu 1: Thân thiện, gợi mở
+                "Tôi đã tiếp nhận các triệu chứng bạn vừa nêu. Rất có thể tình trạng này liên quan đến bệnh: "
+                        + diseaseName + ". "
+                        + "Tuy nhiên, để có cái nhìn chính xác nhất, bạn có thể chia sẻ thêm những thay đổi khác trong cơ thể gần đây không?",
 
+                // Câu 2: Chuyên nghiệp, thận trọng
+                "Dựa trên phân tích ban đầu, các dấu hiệu của bạn có nhiều nét tương đồng với bệnh: " + diseaseName
+                        + ". "
+                        + "Để chẩn đoán được khách quan hơn, bạn vui lòng mô tả chi tiết hơn về tần suất và cường độ của các triệu chứng nhé.",
+
+                // Câu 3: Đồng cảm, nhẹ nhàng
+                "Tôi hiểu những khó chịu mà bạn đang trải qua. Những biểu hiện đó khá giống với bệnh: " + diseaseName
+                        + ". "
+                        + "Bạn hãy kể kỹ hơn một chút về tình trạng hiện tại của mình để tôi có thêm cơ sở hỗ trợ bạn tốt hơn nhé.",
+
+                // Câu 4: Ngắn gọn, súc tích
+                "Có khả năng bạn đang gặp vấn đề về: " + diseaseName + ". "
+                        + "Để chắc chắn hơn, tôi cần thêm thông tin. Bạn có đang gặp thêm bất kỳ triệu chứng lạ nào khác không?",
+
+                // Câu 5: Mang tính tư vấn
+                "Hệ thống ghi nhận các triệu chứng của bạn rất giống với bệnh: " + diseaseName + ". "
+                        + "Nhưng đây mới chỉ là dự đoán ban đầu. Bạn có thể cho tôi biết các triệu chứng này đã kéo dài bao lâu rồi không?",
+
+                // Câu 6: Khuyến khích người dùng chia sẻ
+                "Từ những thông tin bạn cung cấp, tôi nghi ngờ bạn đang mắc: " + diseaseName + ". "
+                        + "Để hỗ trợ bạn tốt nhất, tôi rất cần bạn mô tả chi tiết hơn về cảm giác của mình lúc này.",
+
+                // Câu 7: Theo hướng loại trừ
+                "Các biểu hiện bạn kể hướng đến bệnh: " + diseaseName + ". "
+                        + "Tuy nhiên, một số bệnh khác cũng có dấu hiệu tương tự. Bạn hãy cung cấp thêm thông tin để tôi giúp bạn phân biệt rõ hơn nhé.",
+
+                // Câu 8: Chu đáo
+                "Cảm ơn bạn đã chia sẻ. Theo dữ liệu hiện có, rất có thể bạn bị: " + diseaseName + ". "
+                        + "Để tăng độ chính xác cho chẩn đoán, bạn hãy giúp tôi liệt kê chi tiết hơn tình trạng sức khỏe hiện tại của mình.",
+
+                // Câu 9: Trực diện
+                "Rất có khả năng bạn đang mắc bệnh: " + diseaseName + ". "
+                        + "Dù vậy, thông tin hiện tại vẫn còn hơi ít. Bạn có thể nói rõ hơn về các triệu chứng đi kèm mà bạn nhận thấy không?",
+
+                // Câu 10: Giọng điệu của một trợ lý y tế
+                "Tôi đã phân tích các dấu hiệu bạn nêu và thấy chúng khá khớp với bệnh: " + diseaseName + ". "
+                        + "Để đưa ra lời khuyên chính xác nhất, tôi cần bạn mô tả thêm về tình hình sức khỏe của bạn trong vài ngày qua.");
+        return responses.get(random.nextInt(responses.size()));
     }
 
     @Transactional
@@ -151,7 +189,7 @@ public class ConversationService {
                 .createdAt(LocalDateTime.now())
                 .conversation(conversation)
                 .build();
-        
+
         Message savedUserMessage = messageRepository.save(userMessage);
         MessageResponse userMessageResponse = messageMapper.toResponse(savedUserMessage);
 
@@ -160,7 +198,18 @@ public class ConversationService {
 
         String content = handleSimpleChat(request.getContent());
         if (content != null) {
-            botResponseContent = content;
+            if (CURRENT_DISEASE_ID != "") {
+                log.info("Existing context symptoms: " + SYMPTOM_CONTEXT.get(conversation_id));
+                RagResponse ragResponse = modelApiService.ragResponse(
+                        com.example.chatbot.dto.request.RagRequest.builder()
+                                .disease_id(CURRENT_DISEASE_ID)
+                                .user_query(request.getContent())
+                                .build());
+
+                botResponseContent = ragResponse.getResponse();
+            } else {
+                botResponseContent = content;
+            }
         } else {
             // nhận dạng triệu chứng từ user
             SymptomResponse symptomResponse = modelApiService.extractSymptom(request);
@@ -169,7 +218,7 @@ public class ConversationService {
             // xử lý nhớ ngữ cảnh triệu chứng
             List<String> symptoms = symptomResponse.getSymptoms();
             Set<String> contextSymptoms;
-            if(SYMPTOM_CONTEXT.containsKey(conversation_id)) {
+            if (SYMPTOM_CONTEXT.containsKey(conversation_id)) {
                 contextSymptoms = SYMPTOM_CONTEXT.get(conversation_id);
                 for (String symptom : symptoms) {
                     if (!contextSymptoms.contains(symptom)) {
@@ -181,27 +230,21 @@ public class ConversationService {
                 SYMPTOM_CONTEXT.put(conversation_id, contextSymptoms);
                 REQUEST_LIMIT.put(conversation_id, 0);
             }
-
+            log.info("Current context symptoms: " + contextSymptoms);
 
             // chẩn đoán bệnh từ các triệu chứng trong ngữ cảnh
             PredictResponse predictResponse = modelApiService.predictDisease(new ArrayList<>(contextSymptoms));
 
-            if(predictResponse.getConfidence() < 0.85 && REQUEST_LIMIT.get(conversation_id) < 2) {
-                botResponseContent = "À, tôi hiểu rồi. Từ các triệu chứng mà bạn đã cung cấp, rất có thể bạn đang mắc bệnh: " + predictResponse.getDisease_name()
-                    + "\n\nNhưng để chắc chắn hơn, tôi cần thêm thông tin về các triệu chứng mà bạn gặp phải để có thể đưa ra chẩn đoán chính xác hơn. "
-                    + "\n\nBạn có thể mô tả chi tiết hơn về tình trạng sức khỏe hiện tại của mình không?";
-
+            if (predictResponse.getConfidence() < 0.65 && REQUEST_LIMIT.get(conversation_id) < 2) {
+                botResponseContent = genCallBackResponse(predictResponse.getDisease_name());
                 REQUEST_LIMIT.put(conversation_id, REQUEST_LIMIT.get(conversation_id) + 1);
             } else {
-                // Disease disease = diseaseRepository.findById(predictResponse.getDisease_id())
-                //         .orElseThrow(() -> new AppException(ErrorCode.DISEASE_NOT_FOUND));
-                // botResponseContent = handlePredictDiseaseChat(disease);
+                CURRENT_DISEASE_ID = predictResponse.getDisease_id();
                 RagResponse ragResponse = modelApiService.ragResponse(
-                    com.example.chatbot.dto.request.RagRequest.builder()
-                        .disease_id(predictResponse.getDisease_id())
-                        .user_query(request.getContent())
-                        .build()
-                );
+                        com.example.chatbot.dto.request.RagRequest.builder()
+                                .disease_id(predictResponse.getDisease_id())
+                                .user_query(request.getContent())
+                                .build());
 
                 botResponseContent = ragResponse.getResponse();
             }
@@ -214,7 +257,7 @@ public class ConversationService {
                 .createdAt(LocalDateTime.now())
                 .conversation(conversation)
                 .build();
-        
+
         Message savedBotMessage = messageRepository.save(botMessage);
         MessageResponse botMessageResponse = messageMapper.toResponse(savedBotMessage);
 
@@ -225,12 +268,10 @@ public class ConversationService {
                 .build();
     }
 
-
-
     public List<MessageResponse> getMessages(String conversationId) {
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        
+
         return conversation.getMessages().stream()
                 .map(messageMapper::toResponse)
                 .toList();

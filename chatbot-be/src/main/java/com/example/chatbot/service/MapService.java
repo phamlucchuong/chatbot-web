@@ -12,7 +12,6 @@ import com.example.chatbot.dto.response.GoongResponse.DirectionRoute;
 import com.example.chatbot.dto.response.GoongResponse.GeocodingResponse;
 import com.example.chatbot.dto.response.GoongResponse.GoongLocation;
 import com.example.chatbot.dto.response.HospitalResponse;
-import com.example.chatbot.dto.response.OpenMapResponse.NearbyResponse;
 import com.example.chatbot.dto.response.OverpassResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -142,12 +141,12 @@ public class MapService {
 
                 // Xây dựng URL với tham số
                 String query = String.format(java.util.Locale.US, """
-            [out:json][timeout:15];
-            (
-              way["amenity"="hospital"](around:%d,%f,%f);
-            );
-            out center tags;
-            """, radius, lat, lng);
+                                [out:json][timeout:15];
+                                (
+                                  way["amenity"="hospital"](around:%d,%f,%f);
+                                );
+                                out center tags;
+                                """, radius, lat, lng);
                 OverpassResponse response = overpassWebClient.post()
                                 .uri("/api/interpreter")
                                 .header("Content-Type", "text/plain")
@@ -163,7 +162,6 @@ public class MapService {
                         hospital.setName(element.getTags().get("name"));
                         return hospital;
                 }).toList();
-                
-        
-    }}
 
+        }
+}

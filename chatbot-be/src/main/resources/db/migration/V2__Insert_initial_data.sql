@@ -37,7 +37,7 @@ Nếu bạn chỉ có các triệu chứng nhẹ như sổ mũi, ho khan và kh�
 Lây virus từ người khác: siêu vi cúm có trong nước mũi, nước bọt người bệnh lây truyền sang người lành qua các hạt nước nhỏ li ti là nguồn lây nhiễm chủ yếu.
 Hệ miễn dịch: những người có hệ miễn dịch kém như người già, trẻ em, người mắc bệnh mạn tính hoặc sử dụng thuốc ức chế miễn dịch cũng rất dễ bị cảm cúm.', 
 'Tiêm vắc-xin phòng cúm hàng năm, rửa tay thường xuyên bằng xà phòng, che miệng khi ho/hắt hơi, tránh tụ tập nơi đông người khi có dịch.'),
-
+    
 
 
 ('D003', 
